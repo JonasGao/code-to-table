@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const TopNav: React.FC = () => (
   <nav style={{
@@ -21,9 +22,8 @@ const TopNav: React.FC = () => (
       margin: 0,
       padding: 0
     }}>
-      <li><a href="#" style={{ color: '#fff', textDecoration: 'none' }}>首页</a></li>
-      <li><a href="#" style={{ color: '#fff', textDecoration: 'none' }}>关于</a></li>
-      <li><a href="#" style={{ color: '#fff', textDecoration: 'none' }}>联系</a></li>
+      <li><Link to="/" style={{ color: '#fff', textDecoration: 'none' }}>首页</Link></li>
+      <li><Link to="/java-to-table" style={{ color: '#fff', textDecoration: 'none' }}>Java转表格</Link></li>
     </ul>
   </nav>
 );

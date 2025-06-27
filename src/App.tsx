@@ -3,6 +3,9 @@ import { Box, Container, Paper, Typography, Button } from '@mui/material';
 import Editor from '@monaco-editor/react';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import TopNav from './TopNav';
+import JavaToTable from './JavaToTable';
 
 function App() {
   const [schemaData, setSchemaData] = useState<any[]>([]);
@@ -60,51 +63,61 @@ function App() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        JSON Schema 解析器
-      </Typography>
-      <Box sx={{ display: 'flex', gap: 2, height: 'calc(100vh - 150px)' }}>
-        <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <Typography variant="h6" gutterBottom>
-            JSON Schema 编辑器
-          </Typography>
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            <Editor
-              height="100%"
-              defaultLanguage="json"
-              defaultValue='{"properties":{}}'
-              onChange={handleEditorChange}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-              }}
-            />
-          </Box>
-        </Paper>
-        <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            解析结果
-            <Button
-              variant="contained"
-              startIcon={<ContentCopyIcon />}
-              onClick={handleCopyToExcel}
-              disabled={schemaData.length === 0}
-            >
-              复制到 Excel
-            </Button>
-          </Typography>
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            <DataGrid
-              rows={schemaData}
-              columns={columns}
-              hideFooter
-              disableRowSelectionOnClick
-            />
-          </Box>
-        </Paper>
-      </Box>
-    </Container>
+    <Router>
+      <TopNav />
+      <Routes>
+        <Route path="/" element={
+          <div style={{ marginTop: 60 }}>
+            <Container maxWidth="xl">
+              <Typography variant="h4" gutterBottom>
+                JSON Schema 解析器
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, height: 'calc(100vh - 150px)' }}>
+                <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <Typography variant="h6" gutterBottom>
+                    JSON Schema 编辑器
+                  </Typography>
+                  <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                    <Editor
+                      height="100%"
+                      defaultLanguage="json"
+                      defaultValue='{"properties":{}}'
+                      onChange={handleEditorChange}
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                      }}
+                    />
+                  </Box>
+                </Paper>
+                <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    解析结果
+                    <Button
+                      variant="contained"
+                      startIcon={<ContentCopyIcon />}
+                      onClick={handleCopyToExcel}
+                      disabled={schemaData.length === 0}
+                    >
+                      复制到 Excel
+                    </Button>
+                  </Typography>
+                  <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                    <DataGrid
+                      rows={schemaData}
+                      columns={columns}
+                      hideFooter
+                      disableRowSelectionOnClick
+                    />
+                  </Box>
+                </Paper>
+              </Box>
+            </Container>
+          </div>
+        } />
+        <Route path="/java-to-table" element={<JavaToTable />} />
+      </Routes>
+    </Router>
   );
 }
 
