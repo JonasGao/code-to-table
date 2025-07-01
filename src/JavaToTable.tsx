@@ -1,36 +1,133 @@
-import React, { useState } from 'react';
-import { Box, Container, Paper, Typography, Button, TextField } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import React, { useState } from "react";
+import {
+  Box,
+  Container,
+  Paper,
+  Typography,
+  Button,
+  TextField,
+} from "@mui/material";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { ClassBodyCstNode, ClassBodyDeclarationCstNode, FieldDeclarationCstNode, FieldModifierCstNode, IToken, parse } from "java-parser";
+
+function findFieldDeclarationType(node: FieldDeclarationCstNode) {
+  const unannType = node.children.unannType[0];
+  const { unannReferenceType, unannPrimitiveTypeWithOptionalDimsSuffix } =
+    unannType.children;
+  if (unannReferenceType) {
+    return unannReferenceType[0].children.unannClassOrInterfaceType[0].children
+      .unannClassType[0].children.Identifier[0].image;
+  } else if (unannPrimitiveTypeWithOptionalDimsSuffix) {
+    const { numericType, Boolean } =
+      unannPrimitiveTypeWithOptionalDimsSuffix[0].children.unannPrimitiveType[0]
+        .children;
+    if (numericType) {
+      const { integralType, floatingPointType } = numericType[0].children;
+      if (integralType) {
+        const { Byte, Char, Short, Int, Long } = integralType[0].children;
+        const t: IToken[] | undefined = Byte || Char || Short || Int || Long;
+        if (t) {
+          return t[0].image;
+        }
+      } else if (floatingPointType) {
+        const { Double, Float } = floatingPointType[0].children;
+        const t: IToken[] | undefined = Double || Float;
+        if (t) {
+          return t[0].image;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function findFieldDeclarationName(node: FieldDeclarationCstNode) {
+  if (node.children.variableDeclaratorList) {
+    const varDecl =
+      node.children.variableDeclaratorList[0].children.variableDeclarator[0];
+    if (varDecl.children.variableDeclaratorId) {
+      const varId = varDecl.children.variableDeclaratorId[0];
+      if (varId.children.Identifier) {
+        return varId.children.Identifier[0].image;
+      }
+    }
+  }
+  return null;
+}
+
+function findFieldDeclarationModifier(node: FieldDeclarationCstNode) {
+  if (node.children.fieldModifier) {
+    for (const i of node.children.fieldModifier) {
+      const m = i.children.Private
+        || i.children.Protected
+        || i.children.Public
+      if (m) {
+        return m[0].image
+      }
+    }
+  }
+  return null
+}
+
+function formatComment(text: string | undefined) {
+  if (!text) return '';
+  // 只处理 javadoc 注释
+  if (text.startsWith('/**')) {
+    return text
+      .replace(/^\/\*\*/,'') // 去掉开头 /**
+      .replace(/\*\/$/,'')    // 去掉结尾 */
+      .split('\n')
+      .map(line => line.replace(/^\s*\* ?/, '').trim()) // 去掉每行开头的 *
+      .join(' ')
+      .trim();
+  }
+  return text.trim();
+}
+
+function findField(node: ClassBodyDeclarationCstNode) {
+  const f = node.children.classMemberDeclaration?.[0].children.fieldDeclaration?.[0]
+  if (f) {
+    const type = findFieldDeclarationType(f);
+    const name = findFieldDeclarationName(f);
+    const modifier = findFieldDeclarationModifier(f);
+    const comment = formatComment(node.leadingComments?.[0].image)
+    return {type, name, modifier, comment}
+  }
+  return null
+}
+
+function findFields(node: any, output: any[]) {
+  if (!node) return;
+  if (Array.isArray(node)) {
+    node.forEach((child) => findFields(child, output));
+    return;
+  }
+  if (node.name === "classBodyDeclaration") {
+    const f = findField(node)
+    if (f) {
+      output.push(f);
+    }
+  } else if (node.children) {
+    Object.values(node.children).forEach((child) => findFields(child, output));
+  }
+}
 
 function parseJavaFields(javaCode: string) {
-  // 支持 /** ... */ 注释和 // 注释
-  const fieldRegex = /(?:\/\*\*([\s\S]*?)\*\/|\/\/([^\n]*))?\s*private\s+([\w<>\[\]]+)\s+(\w+);/g;
-  const rows = [];
-  let match;
-  let id = 0;
-  while ((match = fieldRegex.exec(javaCode)) !== null) {
-    const blockComment = match[1]?.replace(/\*/g, '').trim();
-    const lineComment = match[2]?.trim();
-    const type = match[3];
-    const name = match[4];
-    rows.push({
-      id: id++,
-      name,
-      type,
-      comment: blockComment || lineComment || '',
-    });
-  }
-  return rows;
+  const cst = parse(javaCode);
+  const fields: { name: string; type: string; comment: string, modifier: string }[] = [];
+  findFields(cst, fields);
+  return fields.map((f, id) => ({ ...f, id }));
 }
 
 const columns: GridColDef[] = [
-  { field: 'name', headerName: '字段名', width: 150 },
-  { field: 'type', headerName: '类型', width: 150 },
-  { field: 'comment', headerName: '注释', width: 300 },
+  { field: "modifier", headerName: "修饰符", width: 150 },
+  { field: "name", headerName: "字段名", width: 150 },
+  { field: "type", headerName: "类型", width: 150 },
+  { field: "comment", headerName: "注释", width: 300 },
 ];
 
 const JavaToTable: React.FC = () => {
-  const [javaCode, setJavaCode] = useState('');
+  const [javaCode, setJavaCode] = useState("");
   const [rows, setRows] = useState<any[]>([]);
 
   const handleParse = () => {
@@ -38,17 +135,21 @@ const JavaToTable: React.FC = () => {
   };
 
   const handleCopyToExcel = () => {
-    const headers = columns.map(col => col.headerName).join('\t');
-    const dataRows = rows.map(row => columns.map(col => row[col.field]).join('\t')).join('\n');
+    const headers = columns.map((col) => col.headerName).join("\t");
+    const dataRows = rows
+      .map((row) => columns.map((col) => row[col.field]).join("\t"))
+      .join("\n");
     const excelData = `${headers}\n${dataRows}`;
     navigator.clipboard.writeText(excelData).then(() => {
-      alert('数据已复制到剪贴板，请粘贴到 Excel 中');
+      alert("数据已复制到剪贴板，请粘贴到 Excel 中");
     });
   };
 
   return (
     <Container maxWidth="md" sx={{ mt: 8 }}>
-      <Typography variant="h4" gutterBottom>Java转表格工具</Typography>
+      <Typography variant="h4" gutterBottom>
+        Java转表格工具
+      </Typography>
       <Paper sx={{ p: 2, mb: 2 }}>
         <TextField
           label="粘贴Java类代码"
@@ -56,12 +157,20 @@ const JavaToTable: React.FC = () => {
           minRows={8}
           fullWidth
           value={javaCode}
-          onChange={e => setJavaCode(e.target.value)}
+          onChange={(e) => setJavaCode(e.target.value)}
           variant="outlined"
         />
-        <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-          <Button variant="contained" onClick={handleParse}>解析</Button>
-          <Button variant="outlined" onClick={handleCopyToExcel} disabled={rows.length === 0}>复制到Excel</Button>
+        <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
+          <Button variant="contained" onClick={handleParse}>
+            解析
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleCopyToExcel}
+            disabled={rows.length === 0}
+          >
+            复制到Excel
+          </Button>
         </Box>
       </Paper>
       <Paper sx={{ p: 2 }}>
@@ -77,4 +186,4 @@ const JavaToTable: React.FC = () => {
   );
 };
 
-export default JavaToTable; 
+export default JavaToTable;
