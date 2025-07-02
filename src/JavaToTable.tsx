@@ -146,42 +146,36 @@ const JavaToTable: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 8 }}>
-      <Typography variant="h4" gutterBottom>
-        Java转表格工具
-      </Typography>
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <TextField
-          label="粘贴Java类代码"
-          multiline
-          minRows={8}
-          fullWidth
-          value={javaCode}
-          onChange={(e) => setJavaCode(e.target.value)}
-          variant="outlined"
-        />
-        <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-          <Button variant="contained" onClick={handleParse}>
-            解析
-          </Button>
-          <Button
+    <Container maxWidth="xl" sx={{ mt: 8 }}>
+      <Typography variant="h4" gutterBottom>Java转表格工具</Typography>
+      <Box sx={{ display: 'flex', gap: 2, height: '70vh' }}>
+        <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
+          <TextField
+            label="粘贴Java类代码"
+            multiline
+            minRows={8}
+            fullWidth
+            value={javaCode}
+            onChange={e => setJavaCode(e.target.value)}
             variant="outlined"
-            onClick={handleCopyToExcel}
-            disabled={rows.length === 0}
-          >
-            复制到Excel
-          </Button>
-        </Box>
-      </Paper>
-      <Paper sx={{ p: 2 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          autoHeight
-          hideFooter
-          disableRowSelectionOnClick
-        />
-      </Paper>
+            sx={{ flex: 1, mb: 2 }}
+          />
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="contained" onClick={handleParse}>解析</Button>
+            <Button variant="outlined" onClick={handleCopyToExcel} disabled={rows.length === 0}>复制到Excel</Button>
+          </Box>
+        </Paper>
+        <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            autoHeight={false}
+            sx={{ flex: 1 }}
+            hideFooter
+            disableRowSelectionOnClick
+          />
+        </Paper>
+      </Box>
     </Container>
   );
 };
