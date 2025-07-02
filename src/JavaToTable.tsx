@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { ClassBodyCstNode, ClassBodyDeclarationCstNode, FieldDeclarationCstNode, FieldModifierCstNode, IToken, parse } from "java-parser";
+import Editor from '@monaco-editor/react';
 
 function findFieldDeclarationType(node: FieldDeclarationCstNode) {
   const unannType = node.children.unannType[0];
@@ -150,17 +151,17 @@ const JavaToTable: React.FC = () => {
       <Typography variant="h4" gutterBottom>Java转表格工具</Typography>
       <Box sx={{ display: 'flex', gap: 2, height: '70vh' }}>
         <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
-          <TextField
-            label="粘贴Java类代码"
-            multiline
-            minRows={8}
-            fullWidth
+          <Editor
+            height="100%"
+            defaultLanguage="java"
             value={javaCode}
-            onChange={e => setJavaCode(e.target.value)}
-            variant="outlined"
-            sx={{ flex: 1, mb: 2 }}
+            onChange={v => setJavaCode(v || '')}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+            }}
           />
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
             <Button variant="contained" onClick={handleParse}>解析</Button>
             <Button variant="outlined" onClick={handleCopyToExcel} disabled={rows.length === 0}>复制到Excel</Button>
           </Box>
