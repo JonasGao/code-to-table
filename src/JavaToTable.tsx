@@ -151,17 +151,19 @@ const JavaToTable: React.FC = () => {
       <Typography variant="h4" gutterBottom>Java转表格工具</Typography>
       <Box sx={{ display: 'flex', gap: 2, height: '70vh' }}>
         <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
-          <Editor
-            height="100%"
-            defaultLanguage="java"
-            value={javaCode}
-            onChange={v => setJavaCode(v || '')}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-            }}
-          />
-          <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+          <Box sx={{ flex: 1, border: '1px solid #ccc', borderRadius: 1, overflow: 'hidden', mb: 2 }}>
+            <Editor
+              height="100%"
+              defaultLanguage="java"
+              value={javaCode}
+              onChange={v => setJavaCode(v || '')}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+              }}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
             <Button variant="contained" onClick={handleParse}>解析</Button>
             <Button variant="outlined" onClick={handleCopyToExcel} disabled={rows.length === 0}>复制到Excel</Button>
           </Box>
