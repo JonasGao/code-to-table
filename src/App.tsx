@@ -77,7 +77,7 @@ function App() {
                   <Typography variant="h6" gutterBottom>
                     JSON Schema 编辑器
                   </Typography>
-                  <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                  <Box sx={{ flex: 1, border: '1px solid #ccc', borderRadius: 1, overflow: 'hidden', mb: 2, p: 1 }}>
                     <Editor
                       height="100%"
                       defaultLanguage="json"

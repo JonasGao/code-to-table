@@ -151,7 +151,7 @@ const JavaToTable: React.FC = () => {
       <Typography variant="h4" gutterBottom>Java转表格工具</Typography>
       <Box sx={{ display: 'flex', gap: 2, height: '70vh' }}>
         <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ flex: 1, border: '1px solid #ccc', borderRadius: 1, overflow: 'hidden', mb: 2 }}>
+          <Box sx={{ flex: 1, border: '1px solid #ccc', borderRadius: 1, overflow: 'hidden', mb: 2, p: 1 }}>
             <Editor
               height="100%"
               defaultLanguage="java"
