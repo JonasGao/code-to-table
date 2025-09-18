@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 const TopNav: React.FC = () => (
   <nav style={{
@@ -22,9 +22,9 @@ const TopNav: React.FC = () => (
       margin: 0,
       padding: 0
     }}>
-      <li><Link to="/" style={{ color: '#fff', textDecoration: 'none' }}>首页</Link></li>
-      <li><Link to="/java-to-table" style={{ color: '#fff', textDecoration: 'none' }}>Java转表格</Link></li>
-      <li><Link to="/docker-config" style={{ color: '#fff', textDecoration: 'none' }}>Docker配置生成</Link></li>
+      <li><Link href="/" style={{ color: '#fff', textDecoration: 'none' }}>首页</Link></li>
+      <li><Link href="/java-to-table" style={{ color: '#fff', textDecoration: 'none' }}>Java转表格</Link></li>
+      <li><Link href="/docker-config" style={{ color: '#fff', textDecoration: 'none' }}>Docker配置生成</Link></li>
     </ul>
   </nav>
 );
