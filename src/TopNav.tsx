@@ -24,6 +24,7 @@ const TopNav: React.FC = () => (
     }}>
       <li><Link to="/" style={{ color: '#fff', textDecoration: 'none' }}>首页</Link></li>
       <li><Link to="/java-to-table" style={{ color: '#fff', textDecoration: 'none' }}>Java转表格</Link></li>
+      <li><Link to="/docker-config" style={{ color: '#fff', textDecoration: 'none' }}>Docker配置生成</Link></li>
     </ul>
   </nav>
 );

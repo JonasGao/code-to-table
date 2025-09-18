@@ -6,6 +6,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TopNav from './TopNav';
 import JavaToTable from './JavaToTable';
+import DockerConfigGen from './DockerConfigGen';
 
 function App() {
   const [schemaData, setSchemaData] = useState<any[]>([]);
@@ -116,6 +117,7 @@ function App() {
           </div>
         } />
         <Route path="/java-to-table" element={<JavaToTable />} />
+        <Route path="/docker-config" element={<DockerConfigGen />} />
       </Routes>
     </Router>
   );
