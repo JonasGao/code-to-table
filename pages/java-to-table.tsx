@@ -41,15 +41,15 @@ function findFieldDeclarationName(node: FieldDeclarationCstNode) {
     const varDecl = node.children.variableDeclaratorList[0].children.variableDeclarator[0];
     if (varDecl.children.variableDeclaratorId) {
       const varId = varDecl.children.variableDeclaratorId[0];
-      return varId.children.Identifier[0].image;
+      return varId.children.Identifier?.[0]?.image || null;
     }
   }
   return null;
 }
 
 function findFieldDeclarationModifiers(node: FieldDeclarationCstNode) {
-  if (node.children.fieldModifierList) {
-    const modifiers = node.children.fieldModifierList[0].children.fieldModifier.map((mod: FieldModifierCstNode) => {
+  if (node.children.fieldModifier) {
+    const modifiers = node.children.fieldModifier.map((mod: FieldModifierCstNode) => {
       if (mod.children.Public) return "public";
       if (mod.children.Private) return "private";
       if (mod.children.Protected) return "protected";
@@ -64,9 +64,9 @@ function findFieldDeclarationModifiers(node: FieldDeclarationCstNode) {
   return [];
 }
 
-function findFieldDeclarationDocs(node: ClassBodyDeclarationCstNode) {
-  if (node.children.normalClassBodyDeclaration && node.children.normalClassBodyDeclaration[0].children.classMemberDeclaration && node.children.normalClassBodyDeclaration[0].children.classMemberDeclaration[0].children.fieldDeclaration) {
-    const fieldDecl = node.children.normalClassBodyDeclaration[0].children.classMemberDeclaration[0].children.fieldDeclaration[0];
+function findFieldDeclarationDocs(node: any) {
+  if (node.children && (node.children as any).normalClassBodyDeclaration && (node.children as any).normalClassBodyDeclaration[0]?.children?.classMemberDeclaration && (node.children as any).normalClassBodyDeclaration[0]?.children?.classMemberDeclaration[0]?.children?.fieldDeclaration) {
+    const fieldDecl = (node.children as any).normalClassBodyDeclaration[0].children.classMemberDeclaration[0].children.fieldDeclaration[0];
     if (node.children.javadocComment) {
       const javadoc = node.children.javadocComment[0].image;
       return javadoc.replace(/\/\*\*|\*\/|^\s*\*\s?/gm, '').trim();
@@ -88,13 +88,13 @@ function JavaToTable() {
     if (!value) return;
     
     try {
-      const cst = parse(value);
-      const classDeclaration = cst.children.compilationUnit[0].children.typeDeclaration[0].children.classDeclaration[0];
+      const cst = parse(value) as any;
+      const classDeclaration = (cst.children.compilationUnit[0].children.typeDeclaration[0].children as any).classDeclaration[0];
       const classBody = classDeclaration.children.classBody[0] as ClassBodyCstNode;
       
-      const fields = classBody.children.classBodyDeclaration.map((decl: ClassBodyDeclarationCstNode, index) => {
-        if (decl.children.normalClassBodyDeclaration && decl.children.normalClassBodyDeclaration[0].children.classMemberDeclaration && decl.children.normalClassBodyDeclaration[0].children.classMemberDeclaration[0].children.fieldDeclaration) {
-          const fieldDecl = decl.children.normalClassBodyDeclaration[0].children.classMemberDeclaration[0].children.fieldDeclaration[0] as FieldDeclarationCstNode;
+      const fields = (classBody.children.classBodyDeclaration?.map((decl: any, index) => {
+        if ((decl.children as any).normalClassBodyDeclaration && (decl.children as any).normalClassBodyDeclaration[0].children.classMemberDeclaration && (decl.children as any).normalClassBodyDeclaration[0].children.classMemberDeclaration[0].children.fieldDeclaration) {
+          const fieldDecl = (decl.children as any).normalClassBodyDeclaration[0].children.classMemberDeclaration[0].children.fieldDeclaration[0] as FieldDeclarationCstNode;
           const type = findFieldDeclarationType(fieldDecl);
           const name = findFieldDeclarationName(fieldDecl);
           const modifiers = findFieldDeclarationModifiers(fieldDecl);
@@ -109,7 +109,7 @@ function JavaToTable() {
           };
         }
         return null;
-      }).filter(Boolean);
+      }) || []).filter(Boolean);
       
       setJavaData(fields as any[]);
     } catch (error) {
