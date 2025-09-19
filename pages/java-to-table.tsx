@@ -138,7 +138,7 @@ function JavaToTable() {
             Java 类转表格
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, height: 'calc(100vh - 150px)' }}>
-            <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
               <Typography variant="h6" gutterBottom>
                 Java 类编辑器
               </Typography>

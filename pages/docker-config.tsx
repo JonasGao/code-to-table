@@ -564,7 +564,7 @@ const DockerConfigGen = () => {
       <Container maxWidth="xl" sx={{ mt: 8 }}>
         <Typography variant="h4" gutterBottom>Docker Daemon 配置生成器</Typography>
         <Box sx={{ display: 'flex', gap: 2, height: '80vh' }}>
-          <Paper sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+          <Paper sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', overflow: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
             <Typography variant="h6" gutterBottom>配置选项</Typography>
             {renderConfigForm()}
           </Paper>
