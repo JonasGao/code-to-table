@@ -114,6 +114,7 @@ const DockerConfigGen = () => {
   const [maxConcurrentUploads, setMaxConcurrentUploads] = useState(5);
   const [experimental, setExperimental] = useState(false);
   const [liveRestore, setLiveRestore] = useState(false);
+  const [features, setFeatures] = useState<Record<string, boolean>>({}); // 添加features状态
   
   // 高级配置
   const [execOpts, setExecOpts] = useState('');
@@ -163,6 +164,9 @@ const DockerConfigGen = () => {
     if (maxConcurrentUploads > 0) config['max-concurrent-uploads'] = maxConcurrentUploads;
     if (experimental) config.experimental = experimental;
     if (liveRestore) config['live-restore'] = liveRestore;
+    
+    // Features配置
+    if (Object.keys(features).length > 0) config.features = features;
     
     // 高级配置
     if (execOpts && execOpts.trim()) config['exec-opts'] = execOpts.split(',').map(opt => opt.trim());
@@ -303,6 +307,56 @@ const DockerConfigGen = () => {
             margin="normal"
             helperText="多个不安全仓库地址用逗号分隔，例如: 192.168.1.100:5000, registry.mycompany.com"
           />
+          
+          {/* Features配置 */}
+          <div style={{ marginTop: '16px' }}>
+            <Typography variant="subtitle1" gutterBottom>Features配置</Typography>
+            <Typography variant="body2" gutterBottom>
+              定义Docker的feature开关，例如: experimental=true,oci-runtime=false
+            </Typography>
+            <TextField
+              fullWidth
+              label="Features (格式: key1=value1,key2=value2)"
+              variant="outlined"
+              value={Object.entries(features).map(([k, v]) => `${k}=${v}`).join(',')}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                const newFeatures: Record<string, boolean> = {};
+                if (newValue) {
+                  newValue.split(',').forEach(item => {
+                    const [key, valueStr] = item.split('=');
+                    if (key && valueStr !== undefined) {
+                      newFeatures[key.trim()] = valueStr.trim() === 'true';
+                    }
+                  });
+                }
+                setFeatures(newFeatures);
+              }}
+              margin="normal"
+              helperText="以逗号分隔的键值对，例如: experimental=true,oci-runtime=false"
+            />
+            <Box sx={{ mt: 1 }}>
+              <Button 
+                variant="outlined" 
+                size="small"
+                onClick={() => {
+                  const defaultFeatures = {
+                    experimental: true,
+                    'oci-runtime': false,
+                    'userland-proxy': true,
+                    'ipv6': false
+                  };
+                  const featureStr = Object.entries(defaultFeatures).map(([k, v]) => `${k}=${v}`).join(',');
+                  setFeatures(defaultFeatures);
+                }}
+              >
+                使用常用features建议
+              </Button>
+              <Typography variant="caption" sx={{ ml: 2 }}>
+                点击应用常用功能开关设置
+              </Typography>
+            </Box>
+          </div>
         </div>
       )}
       
