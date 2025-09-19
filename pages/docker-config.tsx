@@ -11,9 +11,11 @@ import {
   FormControl, 
   InputLabel, 
   Select, 
-  MenuItem, 
-  Tabs, 
-  Tab, 
+  MenuItem,
+  Checkbox,
+  ListItemText,
+  Tabs,
+  Tab,
   Accordion, 
   AccordionSummary, 
   AccordionDetails 
@@ -115,6 +117,8 @@ const DockerConfigGen = () => {
   const [experimental, setExperimental] = useState(false);
   const [liveRestore, setLiveRestore] = useState(false);
   const [features, setFeatures] = useState<Record<string, boolean>>({}); // 添加features状态
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]); // 添加选中的features
+  const [customFeatures, setCustomFeatures] = useState(''); // 添加自定义features输入
   
   // 高级配置
   const [execOpts, setExecOpts] = useState('');
@@ -312,16 +316,98 @@ const DockerConfigGen = () => {
           <div style={{ marginTop: '16px' }}>
             <Typography variant="subtitle1" gutterBottom>Features配置</Typography>
             <Typography variant="body2" gutterBottom>
-              定义Docker的feature开关，例如: experimental=true,oci-runtime=false
+              定义Docker的feature开关
             </Typography>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>选择Features选项</InputLabel>
+              <Select
+                multiple
+                value={selectedFeatures}
+                onChange={(e) => {
+                  const newSelected = e.target.value as string[];
+                  setSelectedFeatures(newSelected);
+                  
+                  // 根据选择更新features状态
+                  const newFeatures: Record<string, boolean> = {...features};
+                  const allFeatures = [
+                    'experimental',
+                    'oci-runtime', 
+                    'userland-proxy',
+                    'ipv6',
+                    'containerd-snapshotter'
+                  ];
+                  
+                  // 移除之前的选择
+                  allFeatures.forEach(feature => {
+                    delete newFeatures[feature];
+                  });
+                  
+                  // 添加新的选择
+                  newSelected.forEach(feature => {
+                    // 根据feature名称设置默认值
+                    switch(feature) {
+                      case 'experimental':
+                        newFeatures[feature] = true;
+                        break;
+                      case 'oci-runtime':
+                        newFeatures[feature] = false;
+                        break;
+                      case 'userland-proxy':
+                        newFeatures[feature] = true;
+                        break;
+                      case 'ipv6':
+                        newFeatures[feature] = false;
+                        break;
+                      case 'containerd-snapshotter':
+                        newFeatures[feature] = true;
+                        break;
+                      default:
+                        newFeatures[feature] = true;
+                    }
+                  });
+                  
+                  setFeatures(newFeatures);
+                }}
+                renderValue={(selected) => selected.join(', ')}
+              >
+                <MenuItem value="experimental">
+                  <Checkbox checked={selectedFeatures.indexOf('experimental') > -1} />
+                  <ListItemText primary="experimental=true" />
+                </MenuItem>
+                <MenuItem value="oci-runtime">
+                  <Checkbox checked={selectedFeatures.indexOf('oci-runtime') > -1} />
+                  <ListItemText primary="oci-runtime=false" />
+                </MenuItem>
+                <MenuItem value="userland-proxy">
+                  <Checkbox checked={selectedFeatures.indexOf('userland-proxy') > -1} />
+                  <ListItemText primary="userland-proxy=true" />
+                </MenuItem>
+                <MenuItem value="ipv6">
+                  <Checkbox checked={selectedFeatures.indexOf('ipv6') > -1} />
+                  <ListItemText primary="ipv6=false" />
+                </MenuItem>
+                <MenuItem value="containerd-snapshotter">
+                  <Checkbox checked={selectedFeatures.indexOf('containerd-snapshotter') > -1} />
+                  <ListItemText primary="containerd-snapshotter=true" />
+                </MenuItem>
+              </Select>
+            </FormControl>
+            <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
+              多选可用的features选项
+            </Typography>
+            
+            {/* 自定义输入 */}
             <TextField
               fullWidth
-              label="Features (格式: key1=value1,key2=value2)"
+              label="或输入自定义features (格式: key1=value1,key2=value2)"
               variant="outlined"
-              value={Object.entries(features).map(([k, v]) => `${k}=${v}`).join(',')}
+              value={customFeatures}
               onChange={(e) => {
                 const newValue = e.target.value;
-                const newFeatures: Record<string, boolean> = {};
+                setCustomFeatures(newValue);
+                
+                // 解析自定义输入并更新features状态
+                const newFeatures: Record<string, boolean> = {...features};
                 if (newValue) {
                   newValue.split(',').forEach(item => {
                     const [key, valueStr] = item.split('=');
@@ -333,29 +419,8 @@ const DockerConfigGen = () => {
                 setFeatures(newFeatures);
               }}
               margin="normal"
-              helperText="以逗号分隔的键值对，例如: experimental=true,oci-runtime=false"
+              helperText="支持自定义features配置"
             />
-            <Box sx={{ mt: 1 }}>
-              <Button 
-                variant="outlined" 
-                size="small"
-                onClick={() => {
-                  const defaultFeatures = {
-                    experimental: true,
-                    'oci-runtime': false,
-                    'userland-proxy': true,
-                    'ipv6': false
-                  };
-                  const featureStr = Object.entries(defaultFeatures).map(([k, v]) => `${k}=${v}`).join(',');
-                  setFeatures(defaultFeatures);
-                }}
-              >
-                使用常用features建议
-              </Button>
-              <Typography variant="caption" sx={{ ml: 2 }}>
-                点击应用常用功能开关设置
-              </Typography>
-            </Box>
           </div>
         </div>
       )}
