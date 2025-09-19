@@ -71,6 +71,7 @@ interface DockerConfig {
   'pidfile'?: string;
   'raw-logs'?: boolean;
   'registry-mirrors'?: string[];
+  'insecure-registries'?: string[];
   'runtimes'?: Record<string, { path: string; runtimeArgs?: string[] }>;
   'selinux-enabled'?: boolean;
   'storage-driver'?: string;
@@ -100,6 +101,7 @@ const DockerConfigGen = () => {
   const [storageDriver, setStorageDriver] = useState('');
   const [storageOpts, setStorageOpts] = useState('');
   const [registryMirrors, setRegistryMirrors] = useState('');
+  const [insecureRegistries, setInsecureRegistries] = useState('');
   const [ipv6, setIpv6] = useState(false);
   const [fixedCidr, setFixedCidr] = useState('');
   const [fixedCidrV6, setFixedCidrV6] = useState('');
@@ -143,6 +145,7 @@ const DockerConfigGen = () => {
     if (storageDriver && storageDriver.trim()) config['storage-driver'] = storageDriver;
     if (storageOpts && storageOpts.trim()) config['storage-opts'] = storageOpts.split(',').map(opt => opt.trim());
     if (registryMirrors && registryMirrors.trim()) config['registry-mirrors'] = registryMirrors.split(',').map(mirror => mirror.trim());
+    if (insecureRegistries && insecureRegistries.trim()) config['insecure-registries'] = insecureRegistries.split(',').map(registry => registry.trim());
     if (ipv6) config.ipv6 = ipv6;
     if (fixedCidr && fixedCidr.trim()) config['fixed-cidr'] = fixedCidr;
     if (fixedCidrV6 && fixedCidrV6.trim()) config['fixed-cidr-v6'] = fixedCidrV6;
@@ -289,6 +292,16 @@ const DockerConfigGen = () => {
             onChange={(e) => setRegistryMirrors(e.target.value)}
             margin="normal"
             helperText="多个镜像加速器用逗号分隔"
+          />
+          
+          <TextField
+            fullWidth
+            label="不安全仓库地址"
+            variant="outlined"
+            value={insecureRegistries}
+            onChange={(e) => setInsecureRegistries(e.target.value)}
+            margin="normal"
+            helperText="多个不安全仓库地址用逗号分隔，例如: 192.168.1.100:5000, registry.mycompany.com"
           />
         </div>
       )}
