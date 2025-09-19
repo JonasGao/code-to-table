@@ -32,7 +32,7 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$DeploymentPath,
     
-    [string]$BuildDir = "build",
+    [string]$BuildDir = "out",
     
     [string]$TempDir = ".deploy_temp"
 )
