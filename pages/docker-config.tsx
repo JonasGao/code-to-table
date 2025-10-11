@@ -20,10 +20,10 @@ import {
   AccordionSummary, 
   AccordionDetails 
 } from '@mui/material';
-import Editor from '@monaco-editor/react';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TopNav from '../src/TopNav';
+import CodeEditor from '../src/CodeEditor';
 
 interface DockerConfig {
   debug?: boolean;
@@ -656,18 +656,12 @@ const DockerConfigGen = () => {
             {copied ? '已复制' : '复制到剪贴板'}
           </Button>
         </Box>
-        <Box sx={{ flex: 1, border: '1px solid #ccc', borderRadius: 1, overflow: 'hidden' }}>
-          <Editor
-            height="100%"
-            defaultLanguage="json"
-            value={jsonString}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              readOnly: true,
-            }}
-          />
-        </Box>
+        <CodeEditor
+          height="100%"
+          language="json"
+          value={jsonString}
+          readOnly={true}
+        />
         
         <Box sx={{ mt: 4 }}>
           <Accordion>

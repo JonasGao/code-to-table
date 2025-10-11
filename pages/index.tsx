@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Container, Paper, Typography, Button } from '@mui/material';
-import Editor from '@monaco-editor/react';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import TopNav from '../src/TopNav';
+import CodeEditor from '../src/CodeEditor';
 
 function Home() {
   const [schemaData, setSchemaData] = useState<any[]>([]);
@@ -73,18 +73,12 @@ function Home() {
               <Typography variant="h6" gutterBottom>
                 JSON Schema 编辑器
               </Typography>
-              <Box sx={{ flex: 1, border: '1px solid #ccc', borderRadius: 1, overflow: 'hidden', mb: 2, p: 1 }}>
-                <Editor
-                  height="100%"
-                  defaultLanguage="json"
-                  defaultValue='{"properties":{}}'
-                  onChange={handleEditorChange}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                  }}
-                />
-              </Box>
+              <CodeEditor
+                height="100%"
+                language="json"
+                defaultValue='{"properties":{}}'
+                onChange={handleEditorChange}
+              />
             </Paper>
             <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
