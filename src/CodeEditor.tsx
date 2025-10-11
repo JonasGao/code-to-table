@@ -1,6 +1,12 @@
 import React from 'react';
-import Editor from '@monaco-editor/react';
+import Editor, { loader } from '@monaco-editor/react';
 import { Box } from '@mui/material';
+
+loader.config({
+  paths: {
+    vs: '/vs',
+  }
+});
 
 interface CodeEditorProps {
   height?: string | number;
