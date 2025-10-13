@@ -4,7 +4,7 @@ import { Box } from '@mui/material';
 
 loader.config({
   paths: {
-    vs: '/vs',
+    vs: `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/vs`,
   }
 });
 
