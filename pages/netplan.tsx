@@ -278,11 +278,12 @@ const NetplanPage: React.FC = () => {
 
                 <Typography variant="subtitle1" sx={{ mt: 2 }}>静态路由</Typography>
                 {(eth.routes || []).map((r, rIdx) => {
-                  const toValid = !r.to || isCIDR(r.to.trim());
+                  const toValue = (r.to || '').trim();
+                  const toValid = !toValue || toValue === 'default' || isCIDR(toValue);
                   const viaValid = !r.via || isIP(r.via.trim());
                   return (
                   <Box key={rIdx} sx={{ display: 'flex', gap: 2, mb: 1 }}>
-                    <TextField label="目的网段 (to)" value={r.to} error={!toValid} helperText={toValid ? '' : 'CIDR 格式无效，如 0.0.0.0/0 或 ::/0'} onChange={(e) => {
+                    <TextField label="目的网段 (to)" value={r.to} error={!toValid} helperText={toValid ? '' : '请输入 CIDR（如 0.0.0.0/0 或 ::/0）或 default'} onChange={(e) => {
                       const next = [...ethernets];
                       next[idx].routes[rIdx].to = e.target.value;
                       setEthernets(next);
