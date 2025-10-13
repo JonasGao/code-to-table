@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Container, Paper, Typography, TextField, Button, FormControlLabel, Switch, IconButton, Tooltip } from '@mui/material';
+import { Box, Container, Paper, Typography, TextField, Button, FormControlLabel, Switch, IconButton, Tooltip, Chip, Stack } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
@@ -207,6 +207,30 @@ const NetplanPage: React.FC = () => {
                     setEthernets(next);
                   }} />
                 </Box>
+                <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', rowGap: 1 }}>
+                  {[
+                    { name: 'Google', ip: '8.8.8.8' },
+                    { name: 'Google', ip: '8.8.4.4' },
+                    { name: 'Cloudflare', ip: '1.1.1.1' },
+                    { name: 'Cloudflare', ip: '1.0.0.1' },
+                    { name: 'Quad9', ip: '9.9.9.9' },
+                    { name: '114DNS', ip: '114.114.114.114' },
+                    { name: 'AliDNS', ip: '223.5.5.5' },
+                    { name: 'OpenDNS', ip: '208.67.222.222' },
+                    { name: 'OpenDNS', ip: '208.67.220.220' }
+                  ].map(({ name, ip }) => (
+                    <Chip key={`${name}-${ip}`} label={`${name} ${ip}`} clickable size="small" onClick={() => {
+                      const next = [...ethernets];
+                      const raw = next[idx].nameservers.addresses || '';
+                      const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+                      if (!parts.includes(ip)) {
+                        parts.push(ip);
+                        next[idx].nameservers.addresses = parts.join(', ');
+                        setEthernets(next);
+                      }
+                    }} />
+                  ))}
+                </Stack>
 
                 <Typography variant="subtitle1" sx={{ mt: 2 }}>静态路由</Typography>
                 {(eth.routes || []).map((r, rIdx) => (
