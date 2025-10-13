@@ -26,6 +26,7 @@ const TopNav: React.FC = () => (
       <li><Link href="/" style={{ color: '#fff', textDecoration: 'none' }}>JSON Schema 解析器</Link></li>
       <li><Link href="/java-to-table" style={{ color: '#fff', textDecoration: 'none' }}>Java转表格</Link></li>
       <li><Link href="/docker-config" style={{ color: '#fff', textDecoration: 'none' }}>Docker配置生成</Link></li>
+      <li><Link href="/netplan" style={{ color: '#fff', textDecoration: 'none' }}>Netplan配置生成</Link></li>
     </ul>
   </nav>
 );
