@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Container, Paper, Typography, TextField, Button, FormControlLabel, Switch, IconButton, Tooltip, Chip, Stack } from '@mui/material';
+import { Box, Container, Paper, Typography, TextField, Button, FormControlLabel, Switch, IconButton, Tooltip, Chip, Stack, Alert } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
@@ -86,6 +86,24 @@ function generateNetplanYaml(version: number, renderer: 'networkd' | 'NetworkMan
   return lines.join('\n') + '\n';
 }
 
+// ===== Validators =====
+const ipv4Regex = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/;
+const ipv6Regex = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(([0-9a-fA-F]{1,4}:){1,7}:)|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4})|(([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2})|(([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3})|(([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4})|(([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5})|([0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6}))|(:((:[0-9a-fA-F]{1,4}){1,7}|:)))(%[0-9a-zA-Z]{1,})?$/;
+const isIPv4 = (ip: string) => ipv4Regex.test(ip);
+const isIPv6 = (ip: string) => ipv6Regex.test(ip);
+const isIP = (ip: string) => isIPv4(ip) || isIPv6(ip);
+const isCIDR = (value: string) => {
+  const idx = value.lastIndexOf('/');
+  if (idx <= 0) return false;
+  const ip = value.slice(0, idx);
+  const prefixStr = value.slice(idx + 1);
+  if (!/^\d+$/.test(prefixStr)) return false;
+  const prefix = Number(prefixStr);
+  if (isIPv4(ip)) return prefix >= 0 && prefix <= 32;
+  if (isIPv6(ip)) return prefix >= 0 && prefix <= 128;
+  return false;
+};
+
 const NetplanPage: React.FC = () => {
   const [version, setVersion] = useState<number>(2);
   const [renderer, setRenderer] = useState<'networkd' | 'NetworkManager'>('networkd');
@@ -166,9 +184,11 @@ const NetplanPage: React.FC = () => {
                 {(!eth.dhcp4 || !eth.dhcp6) && (
                   <>
                     <Typography variant="subtitle1" gutterBottom>静态地址</Typography>
-                    {eth.addresses.map((a, aIdx) => (
+                    {eth.addresses.map((a, aIdx) => {
+                      const cidrValid = !a.cidr || isCIDR(a.cidr.trim());
+                      return (
                       <Box key={aIdx} sx={{ display: 'flex', gap: 2, mb: 1 }}>
-                        <TextField fullWidth label="地址/CIDR (如 192.168.1.10/24 或 2001:db8::1/64)" value={a.cidr} onChange={(e) => {
+                        <TextField fullWidth label="地址/CIDR (如 192.168.1.10/24 或 2001:db8::1/64)" value={a.cidr} error={!cidrValid} helperText={cidrValid ? '' : 'CIDR 格式无效'} onChange={(e) => {
                           const next = [...ethernets];
                           next[idx].addresses[aIdx].cidr = e.target.value;
                           setEthernets(next);
@@ -180,7 +200,8 @@ const NetplanPage: React.FC = () => {
                           setEthernets(next);
                         }}>删除</Button>
                       </Box>
-                    ))}
+                      );
+                    })}
                     <Button size="small" onClick={() => {
                       const next = [...ethernets];
                       next[idx].addresses.push({ cidr: '' });
@@ -188,19 +209,42 @@ const NetplanPage: React.FC = () => {
                     }}>添加地址</Button>
 
                     <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                      <TextField label="网关 IPv4" value={eth.gateway4} onChange={(e) => updateEthernet(idx, { gateway4: e.target.value })} />
-                      <TextField label="网关 IPv6" value={eth.gateway6} onChange={(e) => updateEthernet(idx, { gateway6: e.target.value })} />
+                      {(() => {
+                        const v = (eth.gateway4 || '').trim();
+                        const valid = !v || isIPv4(v);
+                        return (
+                          <TextField label="网关 IPv4" value={eth.gateway4} error={!valid} onChange={(e) => updateEthernet(idx, { gateway4: e.target.value })} helperText={valid ? '已弃用：推荐在下方“静态路由”使用 0.0.0.0/0 默认路由' : 'IPv4 地址格式无效，如 192.168.1.1'} />
+                        );
+                      })()}
+                      {(() => {
+                        const v = (eth.gateway6 || '').trim();
+                        const valid = !v || isIPv6(v);
+                        return (
+                          <TextField label="网关 IPv6" value={eth.gateway6} error={!valid} onChange={(e) => updateEthernet(idx, { gateway6: e.target.value })} helperText={valid ? '已弃用：推荐在下方“静态路由”使用 ::/0 默认路由' : 'IPv6 地址格式无效，如 2001:db8::1'} />
+                        );
+                      })()}
                     </Box>
+                    <Alert severity="warning" variant="outlined" sx={{ mt: 1 }}>
+                      gateway4/gateway6 在较新 Netplan 版本中已不推荐使用。请改用“静态路由”添加默认路由：IPv4 使用 to: 0.0.0.0/0, via: &lt;网关&gt;；IPv6 使用 to: ::/0, via: &lt;网关&gt;。
+                    </Alert>
                   </>
                 )}
 
                 <Typography variant="subtitle1" sx={{ mt: 2 }}>DNS</Typography>
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField fullWidth label="DNS服务器，逗号分隔" value={eth.nameservers.addresses} onChange={(e) => {
+                  {(() => {
+                    const raw = eth.nameservers.addresses || '';
+                    const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+                    const invalid = parts.filter(p => !isIP(p));
+                    const hasErr = invalid.length > 0;
+                    return (
+                      <TextField fullWidth label="DNS服务器，逗号分隔" value={eth.nameservers.addresses} error={hasErr} helperText={hasErr ? `无效IP: ${invalid.join(', ')}` : ''} onChange={(e) => {
                     const next = [...ethernets];
                     next[idx].nameservers.addresses = e.target.value;
                     setEthernets(next);
-                  }} />
+                    }} />
+                    );
+                  })()}
                   <TextField fullWidth label="搜索域，逗号分隔" value={eth.nameservers.search} onChange={(e) => {
                     const next = [...ethernets];
                     next[idx].nameservers.search = e.target.value;
@@ -233,14 +277,17 @@ const NetplanPage: React.FC = () => {
                 </Stack>
 
                 <Typography variant="subtitle1" sx={{ mt: 2 }}>静态路由</Typography>
-                {(eth.routes || []).map((r, rIdx) => (
+                {(eth.routes || []).map((r, rIdx) => {
+                  const toValid = !r.to || isCIDR(r.to.trim());
+                  const viaValid = !r.via || isIP(r.via.trim());
+                  return (
                   <Box key={rIdx} sx={{ display: 'flex', gap: 2, mb: 1 }}>
-                    <TextField label="目的网段 (to)" value={r.to} onChange={(e) => {
+                    <TextField label="目的网段 (to)" value={r.to} error={!toValid} helperText={toValid ? '' : 'CIDR 格式无效，如 0.0.0.0/0 或 ::/0'} onChange={(e) => {
                       const next = [...ethernets];
                       next[idx].routes[rIdx].to = e.target.value;
                       setEthernets(next);
                     }} sx={{ flex: 1 }} />
-                    <TextField label="下一跳 (via)" value={r.via} onChange={(e) => {
+                    <TextField label="下一跳 (via)" value={r.via} error={!viaValid} helperText={viaValid ? '' : 'IP 地址格式无效'} onChange={(e) => {
                       const next = [...ethernets];
                       next[idx].routes[rIdx].via = e.target.value;
                       setEthernets(next);
@@ -257,7 +304,8 @@ const NetplanPage: React.FC = () => {
                       setEthernets(next);
                     }}>删除</Button>
                   </Box>
-                ))}
+                  );
+                })}
                 <Button size="small" onClick={() => {
                   const next = [...ethernets];
                   next[idx].routes.push({ to: '', via: '', metric: undefined });
