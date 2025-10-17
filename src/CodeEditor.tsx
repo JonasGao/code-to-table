@@ -1,6 +1,6 @@
 import React from 'react';
 import Editor, { loader } from '@monaco-editor/react';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 
 loader.config({
   paths: {
@@ -29,9 +29,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   options = {},
   className
 }) => {
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+
   const defaultOptions = {
     minimap: { enabled: false },
-    fontSize: 14,
+    fontSize: 16,
     readOnly,
     ...options
   };
@@ -45,13 +48,16 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         borderRadius: 1, 
         overflow: 'hidden', 
         mb: 2, 
-        p: 1 
+        p: 1,
+        borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)',
+        backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff'
       }}
     >
       <Editor
         height={height}
         language={language}
         value={value}
+        theme={isDarkMode ? 'vs-dark' : 'vs'}
         defaultValue={defaultValue}
         onChange={onChange}
         options={defaultOptions}

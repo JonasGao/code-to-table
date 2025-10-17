@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Box, Container, Paper, Typography, Button } from '@mui/material';
+import { Box, Container, Paper, Typography, Button, useTheme } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import TopNav from '../src/TopNav';
 import CodeEditor from '../src/CodeEditor';
 
 function Home() {
+  const theme = useTheme();
   const [schemaData, setSchemaData] = useState<any[]>([]);
   const [columns, setColumns] = useState<GridColDef[]>([]);
 
@@ -80,7 +81,7 @@ function Home() {
                 onChange={handleEditorChange}
               />
             </Paper>
-            <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: theme.palette.background.paper }}>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 解析结果
                 <Button

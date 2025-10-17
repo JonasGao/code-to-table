@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Container, Paper, Typography, Button } from "@mui/material";
+import { Box, Container, Paper, Typography, Button, useTheme } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { ClassBodyCstNode, ClassBodyDeclarationCstNode, FieldDeclarationCstNode, FieldModifierCstNode, IToken, parse } from "java-parser";
 import TopNav from '../src/TopNav';
@@ -76,6 +76,7 @@ function findFieldDeclarationDocs(node: any) {
 }
 
 function JavaToTable() {
+  const theme = useTheme();
   const [javaData, setJavaData] = useState<any[]>([]);
   const [columns] = useState<GridColDef[]>([
     { field: 'modifiers', headerName: '修饰符', width: 120 },
@@ -149,7 +150,7 @@ function JavaToTable() {
                 onChange={handleEditorChange}
               />
             </Paper>
-            <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: theme.palette.background.paper }}>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 解析结果
                 <Button
