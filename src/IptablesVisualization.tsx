@@ -3,6 +3,7 @@ import { Box, Typography, Paper } from '@mui/material';
 
 interface Rule {
   id: number;
+  table: string;
   chain: string;
   target: string;
   protocol: string;
@@ -44,125 +45,183 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
     }
   };
 
-  const { nodes, connections } = useMemo(() => {
+  const { nodes, connections, tableGroups } = useMemo(() => {
     const nodes: Node[] = [];
     const connections: Connection[] = [];
+    const tableGroups: { [table: string]: { nodes: Node[], connections: Connection[] } } = {};
     
-    // 定义链的位置
-    const chainPositions = {
-      INPUT: { x: 200, y: 100 },
-      FORWARD: { x: 400, y: 100 },
-      OUTPUT: { x: 600, y: 100 }
-    };
-    
-    // 添加链节点
-    Object.entries(chainPositions).forEach(([chain, pos]) => {
-      nodes.push({
-        id: chain,
-        x: pos.x,
-        y: pos.y,
-        label: chain,
-        type: 'chain',
-        color: '#2196F3'
-      });
-    });
-    
-    // 添加外部节点
-    nodes.push(
-      { id: 'internet', x: 50, y: 200, label: 'Internet', type: 'endpoint', color: '#FF9800' },
-      { id: 'local', x: 750, y: 200, label: 'Local Network', type: 'endpoint', color: '#4CAF50' }
-    );
-    
-    // 处理每个链的规则
-    const chainRules = rules.reduce((acc, rule) => {
-      if (!acc[rule.chain]) {
-        acc[rule.chain] = [];
+    // 按表分组规则
+    const rulesByTable = rules.reduce((acc, rule) => {
+      if (!acc[rule.table]) {
+        acc[rule.table] = [];
       }
-      acc[rule.chain].push(rule);
+      acc[rule.table].push(rule);
       return acc;
     }, {} as Record<string, Rule[]>);
     
-    // 为每个链创建规则节点和连接
-    Object.entries(chainRules).forEach(([chain, chainRules]) => {
-      const chainPos = chainPositions[chain as keyof typeof chainPositions];
-      if (!chainPos) return;
+    // 为每个表创建可视化
+    Object.entries(rulesByTable).forEach(([table, tableRules], tableIndex) => {
+      const tableNodes: Node[] = [];
+      const tableConnections: Connection[] = [];
       
-      chainRules.forEach((rule, index) => {
-        const ruleId = `${chain}-rule-${index}`;
-        const ruleY = chainPos.y + 100 + (index * 80);
-        
-        // 添加规则节点
-        nodes.push({
-          id: ruleId,
-          x: chainPos.x,
-          y: ruleY,
-          label: `${rule.protocol || 'any'} ${rule.port || ''}`.trim(),
-          type: 'rule',
-          color: getRuleColor(rule.target)
+      // 定义链的位置（为每个表偏移）
+      const baseX = 200 + (tableIndex * 800);
+      const chainPositions = {
+        INPUT: { x: baseX, y: 100 },
+        FORWARD: { x: baseX + 200, y: 100 },
+        OUTPUT: { x: baseX + 400, y: 100 },
+        PREROUTING: { x: baseX, y: 50 },
+        POSTROUTING: { x: baseX + 400, y: 50 }
+      };
+      
+      // 添加表标题
+      tableNodes.push({
+        id: `${table}-title`,
+        x: baseX + 200,
+        y: 20,
+        label: `表: ${table.toUpperCase()}`,
+        type: 'chain',
+        color: '#9C27B0'
+      });
+      
+      // 添加链节点
+      Object.entries(chainPositions).forEach(([chain, pos]) => {
+        tableNodes.push({
+          id: `${table}-${chain}`,
+          x: pos.x,
+          y: pos.y,
+          label: chain,
+          type: 'chain',
+          color: '#2196F3'
         });
-        
-        // 连接链到第一个规则
-        if (index === 0) {
-          connections.push({
-            from: chain,
-            to: ruleId,
-            color: '#666'
-          });
-        } else {
-          // 连接前一个规则到当前规则
-          const prevRuleId = `${chain}-rule-${index - 1}`;
-          connections.push({
-            from: prevRuleId,
-            to: ruleId,
-            color: '#666'
-          });
+      });
+      
+      // 添加外部节点（每个表都有）
+      tableNodes.push(
+        { id: `${table}-internet`, x: baseX - 100, y: 200, label: 'Internet', type: 'endpoint', color: '#FF9800' },
+        { id: `${table}-local`, x: baseX + 500, y: 200, label: 'Local Network', type: 'endpoint', color: '#4CAF50' }
+      );
+      
+      // 处理每个链的规则
+      const chainRules = tableRules.reduce((acc, rule) => {
+        if (!acc[rule.chain]) {
+          acc[rule.chain] = [];
         }
+        acc[rule.chain].push(rule);
+        return acc;
+      }, {} as Record<string, Rule[]>);
+      
+      // 为每个链创建规则节点和连接
+      Object.entries(chainRules).forEach(([chain, chainRules]) => {
+        const chainPos = chainPositions[chain as keyof typeof chainPositions];
+        if (!chainPos) return;
         
-        // 根据目标添加最终连接
-        if (rule.target === 'ACCEPT') {
-          if (chain === 'INPUT') {
-            connections.push({
-              from: ruleId,
-              to: 'local',
-              label: 'ACCEPT',
-              color: '#4CAF50'
+        chainRules.forEach((rule, index) => {
+          const ruleId = `${table}-${chain}-rule-${index}`;
+          const ruleY = chainPos.y + 100 + (index * 80);
+          
+          // 添加规则节点
+          tableNodes.push({
+            id: ruleId,
+            x: chainPos.x,
+            y: ruleY,
+            label: `${rule.protocol || 'any'} ${rule.port || ''}`.trim(),
+            type: 'rule',
+            color: getRuleColor(rule.target)
+          });
+          
+          // 连接链到第一个规则
+          if (index === 0) {
+            tableConnections.push({
+              from: `${table}-${chain}`,
+              to: ruleId,
+              color: '#666'
             });
-          } else if (chain === 'OUTPUT') {
-            connections.push({
-              from: ruleId,
-              to: 'internet',
-              label: 'ACCEPT',
-              color: '#4CAF50'
+          } else {
+            // 连接前一个规则到当前规则
+            const prevRuleId = `${table}-${chain}-rule-${index - 1}`;
+            tableConnections.push({
+              from: prevRuleId,
+              to: ruleId,
+              color: '#666'
             });
           }
-        } else if (rule.target === 'DROP' || rule.target === 'REJECT') {
-          connections.push({
-            from: ruleId,
-            to: 'internet',
-            label: rule.target,
-            color: '#F44336',
-            dashed: true
-          });
-        }
+          
+          // 根据目标添加最终连接
+          if (rule.target === 'ACCEPT') {
+            if (chain === 'INPUT') {
+              tableConnections.push({
+                from: ruleId,
+                to: `${table}-local`,
+                label: 'ACCEPT',
+                color: '#4CAF50'
+              });
+            } else if (chain === 'OUTPUT') {
+              tableConnections.push({
+                from: ruleId,
+                to: `${table}-internet`,
+                label: 'ACCEPT',
+                color: '#4CAF50'
+              });
+            }
+          } else if (rule.target === 'DROP' || rule.target === 'REJECT') {
+            tableConnections.push({
+              from: ruleId,
+              to: `${table}-internet`,
+              label: rule.target,
+              color: '#F44336',
+              dashed: true
+            });
+          } else if (rule.target === 'SNAT' || rule.target === 'DNAT' || rule.target === 'MASQUERADE') {
+            // NAT 规则的特殊处理
+            tableConnections.push({
+              from: ruleId,
+              to: `${table}-internet`,
+              label: rule.target,
+              color: '#FF5722'
+            });
+          }
+        });
       });
+      
+      // 添加外部到内部的连接
+      tableConnections.push({
+        from: `${table}-internet`,
+        to: `${table}-INPUT`,
+        label: 'Incoming',
+        color: '#FF9800'
+      });
+      
+      tableConnections.push({
+        from: `${table}-OUTPUT`,
+        to: `${table}-internet`,
+        label: 'Outgoing',
+        color: '#FF9800'
+      });
+      
+      // 为 NAT 表添加特殊连接
+      if (table === 'nat') {
+        tableConnections.push({
+          from: `${table}-internet`,
+          to: `${table}-PREROUTING`,
+          label: 'NAT In',
+          color: '#E91E63'
+        });
+        
+        tableConnections.push({
+          from: `${table}-POSTROUTING`,
+          to: `${table}-internet`,
+          label: 'NAT Out',
+          color: '#E91E63'
+        });
+      }
+      
+      tableGroups[table] = { nodes: tableNodes, connections: tableConnections };
+      nodes.push(...tableNodes);
+      connections.push(...tableConnections);
     });
     
-    // 添加外部到内部的连接
-    connections.push({
-      from: 'internet',
-      to: 'INPUT',
-      label: 'Incoming',
-      color: '#FF9800'
-    });
-    
-    connections.push({
-      from: 'OUTPUT',
-      to: 'internet',
-      label: 'Outgoing',
-      color: '#FF9800'
-    });
-    
-    return { nodes, connections };
+    return { nodes, connections, tableGroups };
   }, [rules]);
   
   const renderNode = (node: Node) => {
@@ -246,7 +305,7 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
           网络流量可视化
         </Typography>
         <Box sx={{ width: '100%', height: 'calc(100% - 60px)', border: '1px solid #ddd', borderRadius: 1 }}>
-          <svg width="100%" height="100%" viewBox="0 0 900 700">
+          <svg width="100%" height="100%" viewBox={`0 0 ${Math.max(900, Object.keys(tableGroups).length * 800)} 700`}>
             <defs>
               <marker
                 id="arrowhead"
@@ -271,7 +330,7 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
             
             {/* 添加图例 - 移到右下角 */}
             <g>
-              <rect x="680" y="550" width="200" height="120" fill="white" stroke="#ccc" strokeWidth="1" rx="5"/>
+              <rect x="680" y="550" width="200" height="160" fill="white" stroke="#ccc" strokeWidth="1" rx="5"/>
               <text x="690" y="570" fontSize="12" fontWeight="bold" fill="#333">图例</text>
               
               <circle cx="695" cy="590" r="8" fill="#2196F3"/>
@@ -283,8 +342,14 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
               <circle cx="695" cy="630" r="6" fill="#F44336"/>
               <text x="710" y="635" fontSize="10" fill="#333">DROP/REJECT 规则</text>
               
-              <circle cx="695" cy="650" r="8" fill="#FF9800"/>
-              <text x="710" y="655" fontSize="10" fill="#333">网络端点</text>
+              <circle cx="695" cy="650" r="6" fill="#FF5722"/>
+              <text x="710" y="655" fontSize="10" fill="#333">NAT 规则</text>
+              
+              <circle cx="695" cy="670" r="8" fill="#FF9800"/>
+              <text x="710" y="675" fontSize="10" fill="#333">网络端点</text>
+              
+              <circle cx="695" cy="690" r="8" fill="#9C27B0"/>
+              <text x="710" y="695" fontSize="10" fill="#333">表标题</text>
             </g>
           </svg>
         </Box>

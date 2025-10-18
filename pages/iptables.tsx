@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Container, Paper, Typography, Button, useTheme, Tabs, Tab } from '@mui/material';
+import { Box, Container, Paper, Typography, Button, useTheme, Tabs, Tab, FormControl, InputLabel, Select, MenuItem, Chip } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -12,6 +12,8 @@ function IptablesParser() {
   const theme = useTheme();
   const [rulesData, setRulesData] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState(1);
+  const [selectedTables, setSelectedTables] = useState<string[]>([]);
+  const [availableTables, setAvailableTables] = useState<string[]>([]);
   
   // 从 localStorage 加载或使用空值
   const [editorValue, setEditorValue] = useState(() => {
@@ -22,6 +24,7 @@ function IptablesParser() {
     return '';
   });
   const [columns] = useState<GridColDef[]>([
+    { field: 'table', headerName: '表', width: 100 },
     { field: 'chain', headerName: '链名', width: 120 },
     { field: 'target', headerName: '目标', width: 120 },
     { field: 'protocol', headerName: '协议', width: 100 },
@@ -36,75 +39,88 @@ function IptablesParser() {
     // 分割输入为行
     const lines = input.split('\n').filter(line => line.trim() !== '');
     
-    // 过滤掉非规则行（例如：表名、空行等）
-    const ruleLines = lines.filter(line => 
-      line.startsWith('-A') || 
-      line.startsWith('-I') || 
-      line.startsWith('-D') ||
-      line.includes('ACCEPT') || 
-      line.includes('DROP') || 
-      line.includes('REJECT')
-    );
+    const allRules: any[] = [];
+    let currentTable = 'filter'; // 默认表
+    let ruleIndex = 0;
     
-    // 解析每条规则
-    const rules = ruleLines.map((line, index) => {
-      // 移除多余的空格
+    for (const line of lines) {
       const trimmedLine = line.trim();
       
-      // 提取链名
-      const chainMatch = trimmedLine.match(/-A\s+(\S+)/);
-      const chain = chainMatch ? chainMatch[1] : '';
+      // 检查是否是表声明行
+      if (trimmedLine.startsWith('*')) {
+        currentTable = trimmedLine.substring(1); // 移除 * 符号
+        continue;
+      }
       
-      // 提取目标
-      const targetMatch = trimmedLine.match(/-j\s+(\S+)/);
-      const target = targetMatch ? targetMatch[1] : '';
-      
-      // 提取协议
-      const protocolMatch = trimmedLine.match(/-p\s+(\S+)/);
-      const protocol = protocolMatch ? protocolMatch[1] : '';
-      
-      // 提取源地址
-      const sourceMatch = trimmedLine.match(/-s\s+(\S+)/);
-      const source = sourceMatch ? sourceMatch[1] : '';
-      
-      // 提取目标地址
-      const destinationMatch = trimmedLine.match(/-d\s+(\S+)/);
-      const destination = destinationMatch ? destinationMatch[1] : '';
-      
-      // 提取端口
-      const portMatch = trimmedLine.match(/--sport\s+(\S+)|--dport\s+(\S+)/);
-      const port = portMatch ? (portMatch[1] || portMatch[2]) : '';
-      
-      // 提取注释
-      const commentMatch = trimmedLine.match(/-m\s+comment\s+--comment\s+"([^"]*)"/);
-      const comment = commentMatch ? commentMatch[1] : '';
-      
-      // 提取其他选项
-      const options = trimmedLine
-        .replace(/-A\s+\S+/, '')  // 移除链名
-        .replace(/-j\s+\S+/, '')  // 移除目标
-        .replace(/-p\s+\S+/, '')  // 移除协议
-        .replace(/-s\s+\S+/, '')  // 移除源地址
-        .replace(/-d\s+\S+/, '')  // 移除目标地址
-        .replace(/--sport\s+\S+/, '')  // 移除源端口
-        .replace(/--dport\s+\S+/, '')  // 移除目标端口
-        .replace(/-m\s+comment\s+--comment\s+"[^"]*"/, '')  // 移除注释
-        .trim();
-      
-      return {
-        id: index,
-        chain,
-        target,
-        protocol,
-        source,
-        destination,
-        port,
-        options,
-        comment
-      };
-    });
+      // 检查是否是规则行
+      if (trimmedLine.startsWith('-A') || 
+          trimmedLine.startsWith('-I') || 
+          trimmedLine.startsWith('-D') ||
+          trimmedLine.includes('ACCEPT') || 
+          trimmedLine.includes('DROP') || 
+          trimmedLine.includes('REJECT') ||
+          trimmedLine.includes('SNAT') ||
+          trimmedLine.includes('DNAT') ||
+          trimmedLine.includes('MASQUERADE')) {
+        
+        // 提取链名
+        const chainMatch = trimmedLine.match(/-A\s+(\S+)|-I\s+(\S+)|-D\s+(\S+)/);
+        const chain = chainMatch ? (chainMatch[1] || chainMatch[2] || chainMatch[3]) : '';
+        
+        // 提取目标
+        const targetMatch = trimmedLine.match(/-j\s+(\S+)/);
+        const target = targetMatch ? targetMatch[1] : '';
+        
+        // 提取协议
+        const protocolMatch = trimmedLine.match(/-p\s+(\S+)/);
+        const protocol = protocolMatch ? protocolMatch[1] : '';
+        
+        // 提取源地址
+        const sourceMatch = trimmedLine.match(/-s\s+(\S+)/);
+        const source = sourceMatch ? sourceMatch[1] : '';
+        
+        // 提取目标地址
+        const destinationMatch = trimmedLine.match(/-d\s+(\S+)/);
+        const destination = destinationMatch ? destinationMatch[1] : '';
+        
+        // 提取端口
+        const portMatch = trimmedLine.match(/--sport\s+(\S+)|--dport\s+(\S+)/);
+        const port = portMatch ? (portMatch[1] || portMatch[2]) : '';
+        
+        // 提取注释
+        const commentMatch = trimmedLine.match(/-m\s+comment\s+--comment\s+"([^"]*)"/);
+        const comment = commentMatch ? commentMatch[1] : '';
+        
+        // 提取其他选项
+        const options = trimmedLine
+          .replace(/-A\s+\S+/, '')  // 移除链名
+          .replace(/-I\s+\S+/, '')  // 移除插入链名
+          .replace(/-D\s+\S+/, '')  // 移除删除链名
+          .replace(/-j\s+\S+/, '')  // 移除目标
+          .replace(/-p\s+\S+/, '')  // 移除协议
+          .replace(/-s\s+\S+/, '')  // 移除源地址
+          .replace(/-d\s+\S+/, '')  // 移除目标地址
+          .replace(/--sport\s+\S+/, '')  // 移除源端口
+          .replace(/--dport\s+\S+/, '')  // 移除目标端口
+          .replace(/-m\s+comment\s+--comment\s+"[^"]*"/, '')  // 移除注释
+          .trim();
+        
+        allRules.push({
+          id: ruleIndex++,
+          table: currentTable,
+          chain,
+          target,
+          protocol,
+          source,
+          destination,
+          port,
+          options,
+          comment
+        });
+      }
+    }
     
-    return rules;
+    return allRules;
   };
 
   const handleEditorChange = (value: string | undefined) => {
@@ -120,6 +136,16 @@ function IptablesParser() {
     try {
       const rules = parseIptablesRules(value);
       setRulesData(rules);
+      
+      // 提取可用的表
+      const tableSet = new Set(rules.map(rule => rule.table));
+      const tables = Array.from(tableSet);
+      setAvailableTables(tables);
+      
+      // 如果还没有选择表，默认选择所有表
+      if (selectedTables.length === 0) {
+        setSelectedTables(tables);
+      }
     } catch (error) {
       console.error('iptables 解析错误:', error);
     }
@@ -130,7 +156,7 @@ function IptablesParser() {
     const headers = columns.map(col => col.headerName).join('\t');
     
     // 创建数据行
-    const rows = rulesData.map(row => 
+    const rows = filteredRulesData.map(row => 
       columns.map(col => row[col.field]).join('\t')
     ).join('\n');
     
@@ -146,6 +172,16 @@ function IptablesParser() {
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
+
+  const handleTableChange = (event: any) => {
+    const value = event.target.value;
+    setSelectedTables(typeof value === 'string' ? value.split(',') : value);
+  };
+
+  // 过滤规则数据
+  const filteredRulesData = rulesData.filter(rule => 
+    selectedTables.length === 0 || selectedTables.includes(rule.table)
+  );
 
   // 页面初始化时自动解析规则（如果有内容）
   useEffect(() => {
@@ -188,11 +224,38 @@ function IptablesParser() {
                   variant="contained"
                   startIcon={<ContentCopyIcon />}
                   onClick={handleCopyToExcel}
-                  disabled={rulesData.length === 0}
+                  disabled={filteredRulesData.length === 0}
                 >
                   复制到 Excel
                 </Button>
               </Box>
+              
+              {/* 表选择器 */}
+              {availableTables.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>选择表</InputLabel>
+                    <Select
+                      multiple
+                      value={selectedTables}
+                      onChange={handleTableChange}
+                      renderValue={(selected) => (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {(selected as string[]).map((value) => (
+                            <Chip key={value} label={value} size="small" />
+                          ))}
+                        </Box>
+                      )}
+                    >
+                      {availableTables.map((table) => (
+                        <MenuItem key={table} value={table}>
+                          {table}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+              )}
               
               <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
                 <Tab 
@@ -210,14 +273,14 @@ function IptablesParser() {
               <Box sx={{ flex: 1, overflow: 'hidden' }}>
                 {activeTab === 0 && (
                   <DataGrid
-                    rows={rulesData}
+                    rows={filteredRulesData}
                     columns={columns}
                     hideFooter
                     disableRowSelectionOnClick
                   />
                 )}
                 {activeTab === 1 && (
-                  <IptablesVisualization rules={rulesData} />
+                  <IptablesVisualization rules={filteredRulesData} />
                 )}
               </Box>
             </Paper>
