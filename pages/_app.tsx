@@ -18,7 +18,7 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ minHeight: '100vh' }}>
+      <Box>
         <Component {...pageProps} />
       </Box>
     </ThemeProvider>

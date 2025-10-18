@@ -1,5 +1,8 @@
-import React, { useMemo } from 'react';
-import { Box, Typography, Paper } from '@mui/material';
+import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
+import { Box, Typography, Paper, IconButton, Tooltip } from '@mui/material';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
 
 interface Rule {
   id: number;
@@ -36,6 +39,12 @@ interface Connection {
 }
 
 const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) => {
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const svgRef = useRef<SVGSVGElement>(null);
+  
   const getRuleColor = (target: string): string => {
     switch (target) {
       case 'ACCEPT': return '#4CAF50';
@@ -44,6 +53,79 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
       default: return '#9E9E9E';
     }
   };
+
+  // 缩放控制函数
+  const handleZoomIn = useCallback(() => {
+    setZoom(prev => Math.min(prev * 1.2, 3));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(prev => Math.max(prev / 1.2, 0.1));
+  }, []);
+
+  const handleResetZoom = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  // 鼠标滚轮缩放
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom(prev => Math.max(0.1, Math.min(3, prev * delta)));
+  }, []);
+
+  // 拖拽处理
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button === 0) { // 左键
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
+  }, [pan]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+      setPan({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  }, [isDragging, dragStart]);
+
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  // 防止拖拽时选中文本
+  const handleMouseLeave = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  // 处理全局滚动事件，防止页面滚动
+  useEffect(() => {
+    const handleGlobalWheel = (e: WheelEvent) => {
+      if (svgRef.current && e.target && svgRef.current.contains(e.target as Element)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    // 添加被动监听器来捕获滚动事件
+    document.addEventListener('wheel', handleGlobalWheel, { passive: false });
+    
+    return () => {
+      document.removeEventListener('wheel', handleGlobalWheel);
+    };
+  }, []);
 
   const { nodes, connections, tableGroups } = useMemo(() => {
     const nodes: Node[] = [];
@@ -301,11 +383,58 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
   return (
     <Box sx={{ width: '100%', height: '100%', overflow: 'auto' }}>
       <Paper sx={{ p: 2, height: '100%' }}>
-        <Typography variant="h6" gutterBottom>
-          网络流量可视化
-        </Typography>
-        <Box sx={{ width: '100%', height: 'calc(100% - 60px)', border: '1px solid #ddd', borderRadius: 1 }}>
-          <svg width="100%" height="100%" viewBox={`0 0 ${Math.max(900, Object.keys(tableGroups).length * 800)} 700`}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6">
+            网络流量可视化
+          </Typography>
+          
+          {/* 缩放控制按钮 */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title="放大">
+              <IconButton onClick={handleZoomIn} size="small">
+                <ZoomInIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="缩小">
+              <IconButton onClick={handleZoomOut} size="small">
+                <ZoomOutIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="重置视图">
+              <IconButton onClick={handleResetZoom} size="small">
+                <CenterFocusStrongIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+        <Box 
+          sx={{ 
+            width: '100%', 
+            height: 'calc(100% - 60px)', 
+            border: '1px solid #ddd', 
+            borderRadius: 1, 
+            position: 'relative', 
+            overflow: 'hidden',
+            touchAction: 'none' // 禁用触摸滚动
+          }}
+          onWheel={handleWheel}
+        >
+          <svg 
+            ref={svgRef}
+            width="100%" 
+            height="100%" 
+            viewBox={`0 0 ${Math.max(900, Object.keys(tableGroups).length * 800)} 700`}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+            style={{ 
+              cursor: isDragging ? 'grabbing' : 'grab',
+              userSelect: 'none',
+              touchAction: 'none' // 禁用触摸滚动
+            }}
+          >
             <defs>
               <marker
                 id="arrowhead"
@@ -322,15 +451,18 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
               </marker>
             </defs>
             
-            {/* 渲染连接线 */}
-            {connections.map(renderConnection)}
+            {/* 缩放组 */}
+            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+              {/* 渲染连接线 */}
+              {connections.map(renderConnection)}
+              
+              {/* 渲染节点 */}
+              {nodes.map(renderNode)}
+            </g>
             
-            {/* 渲染节点 */}
-            {nodes.map(renderNode)}
-            
-            {/* 添加图例 - 移到右下角 */}
-            <g>
-              <rect x="680" y="550" width="200" height="160" fill="white" stroke="#ccc" strokeWidth="1" rx="5"/>
+            {/* 添加图例 - 跟随缩放 */}
+            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+              <rect x="680" y="550" width="200" height="180" fill="white" stroke="#ccc" strokeWidth="1" rx="5" fillOpacity="0.95"/>
               <text x="690" y="570" fontSize="12" fontWeight="bold" fill="#333">图例</text>
               
               <circle cx="695" cy="590" r="8" fill="#2196F3"/>
@@ -350,6 +482,10 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
               
               <circle cx="695" cy="690" r="8" fill="#9C27B0"/>
               <text x="710" y="695" fontSize="10" fill="#333">表标题</text>
+              
+              {/* 添加缩放级别显示 */}
+              <rect x="680" y="710" width="200" height="20" fill="#f5f5f5" stroke="#ddd" strokeWidth="1" rx="3"/>
+              <text x="690" y="725" fontSize="9" fill="#666">缩放: {Math.round(zoom * 100)}%</text>
             </g>
           </svg>
         </Box>
