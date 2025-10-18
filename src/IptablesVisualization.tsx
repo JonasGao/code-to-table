@@ -246,7 +246,7 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
           网络流量可视化
         </Typography>
         <Box sx={{ width: '100%', height: 'calc(100% - 60px)', border: '1px solid #ddd', borderRadius: 1 }}>
-          <svg width="100%" height="100%" viewBox="0 0 800 600">
+          <svg width="100%" height="100%" viewBox="0 0 900 700">
             <defs>
               <marker
                 id="arrowhead"
@@ -269,22 +269,22 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
             {/* 渲染节点 */}
             {nodes.map(renderNode)}
             
-            {/* 添加图例 */}
+            {/* 添加图例 - 移到右下角 */}
             <g>
-              <rect x="20" y="20" width="200" height="120" fill="white" stroke="#ccc" strokeWidth="1" rx="5"/>
-              <text x="30" y="40" fontSize="12" fontWeight="bold" fill="#333">图例</text>
+              <rect x="680" y="550" width="200" height="120" fill="white" stroke="#ccc" strokeWidth="1" rx="5"/>
+              <text x="690" y="570" fontSize="12" fontWeight="bold" fill="#333">图例</text>
               
-              <circle cx="35" cy="60" r="8" fill="#2196F3"/>
-              <text x="50" y="65" fontSize="10" fill="#333">链 (Chain)</text>
+              <circle cx="695" cy="590" r="8" fill="#2196F3"/>
+              <text x="710" y="595" fontSize="10" fill="#333">链 (Chain)</text>
               
-              <circle cx="35" cy="80" r="6" fill="#4CAF50"/>
-              <text x="50" y="85" fontSize="10" fill="#333">ACCEPT 规则</text>
+              <circle cx="695" cy="610" r="6" fill="#4CAF50"/>
+              <text x="710" y="615" fontSize="10" fill="#333">ACCEPT 规则</text>
               
-              <circle cx="35" cy="100" r="6" fill="#F44336"/>
-              <text x="50" y="105" fontSize="10" fill="#333">DROP/REJECT 规则</text>
+              <circle cx="695" cy="630" r="6" fill="#F44336"/>
+              <text x="710" y="635" fontSize="10" fill="#333">DROP/REJECT 规则</text>
               
-              <circle cx="35" cy="120" r="8" fill="#FF9800"/>
-              <text x="50" y="125" fontSize="10" fill="#333">网络端点</text>
+              <circle cx="695" cy="650" r="8" fill="#FF9800"/>
+              <text x="710" y="655" fontSize="10" fill="#333">网络端点</text>
             </g>
           </svg>
         </Box>
