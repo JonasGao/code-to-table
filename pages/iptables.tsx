@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Box, Container, Paper, Typography, Button, useTheme } from '@mui/material';
+import { Box, Container, Paper, Typography, Button, useTheme, Tabs, Tab } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import TableChartIcon from '@mui/icons-material/TableChart';
 import TopNav from '../src/TopNav';
 import CodeEditor from '../src/CodeEditor';
+import IptablesVisualization from '../src/IptablesVisualization';
 
 function IptablesParser() {
   const theme = useTheme();
   const [rulesData, setRulesData] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState(1);
   const [columns] = useState<GridColDef[]>([
     { field: 'chain', headerName: '链名', width: 120 },
     { field: 'target', headerName: '目标', width: 120 },
@@ -123,6 +127,10 @@ function IptablesParser() {
     });
   };
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
   return (
     <div>
       <TopNav />
@@ -153,8 +161,10 @@ COMMIT`}
               />
             </Paper>
             <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: theme.palette.background.paper }}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                解析结果
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">
+                  解析结果
+                </Typography>
                 <Button
                   variant="contained"
                   startIcon={<ContentCopyIcon />}
@@ -163,14 +173,33 @@ COMMIT`}
                 >
                   复制到 Excel
                 </Button>
-              </Typography>
-              <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                <DataGrid
-                  rows={rulesData}
-                  columns={columns}
-                  hideFooter
-                  disableRowSelectionOnClick
+              </Box>
+              
+              <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
+                <Tab 
+                  icon={<TableChartIcon />} 
+                  label="表格视图" 
+                  iconPosition="start"
                 />
+                <Tab 
+                  icon={<VisibilityIcon />} 
+                  label="可视化图表" 
+                  iconPosition="start"
+                />
+              </Tabs>
+              
+              <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                {activeTab === 0 && (
+                  <DataGrid
+                    rows={rulesData}
+                    columns={columns}
+                    hideFooter
+                    disableRowSelectionOnClick
+                  />
+                )}
+                {activeTab === 1 && (
+                  <IptablesVisualization rules={rulesData} />
+                )}
               </Box>
             </Paper>
           </Box>
