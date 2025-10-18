@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Container, Paper, Typography, Button, useTheme, Tabs, Tab } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -12,6 +12,18 @@ function IptablesParser() {
   const theme = useTheme();
   const [rulesData, setRulesData] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState(1);
+  const [editorValue, setEditorValue] = useState('');
+  
+  const defaultIptablesRules = `*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp --dport 443 -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+COMMIT`;
   const [columns] = useState<GridColDef[]>([
     { field: 'chain', headerName: '链名', width: 120 },
     { field: 'target', headerName: '目标', width: 120 },
@@ -100,7 +112,9 @@ function IptablesParser() {
 
   const handleEditorChange = (value: string | undefined) => {
     if (!value) return;
+    setEditorValue(value);
     
+    // 自动解析规则
     try {
       const rules = parseIptablesRules(value);
       setRulesData(rules);
@@ -131,6 +145,17 @@ function IptablesParser() {
     setActiveTab(newValue);
   };
 
+  // 页面初始化时自动解析默认规则
+  useEffect(() => {
+    setEditorValue(defaultIptablesRules);
+    try {
+      const rules = parseIptablesRules(defaultIptablesRules);
+      setRulesData(rules);
+    } catch (error) {
+      console.error('iptables 解析错误:', error);
+    }
+  }, []);
+
   return (
     <div>
       <TopNav />
@@ -147,16 +172,7 @@ function IptablesParser() {
               <CodeEditor
                 height="100%"
                 language="bash"
-                defaultValue={`*filter
-:INPUT ACCEPT [0:0]
-:FORWARD ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
--A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
--A INPUT -p tcp --dport 22 -j ACCEPT
--A INPUT -p tcp --dport 80 -j ACCEPT
--A INPUT -p tcp --dport 443 -j ACCEPT
--A INPUT -j REJECT --reject-with icmp-host-prohibited
-COMMIT`}
+                value={editorValue}
                 onChange={handleEditorChange}
               />
             </Paper>
