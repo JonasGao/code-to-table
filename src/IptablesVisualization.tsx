@@ -15,6 +15,7 @@ interface Rule {
   port: string;
   options: string;
   comment: string;
+  type?: string;
 }
 
 interface IptablesVisualizationProps {
@@ -166,15 +167,24 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
         color: '#9C27B0'
       });
       
-      // 添加链节点
+      // 添加链节点（包含链声明信息）
       Object.entries(chainPositions).forEach(([chain, pos]) => {
+        // 查找该链的声明信息
+        const chainDeclaration = tableRules.find(rule => 
+          rule.chain === chain && rule.type === 'chain_declaration'
+        );
+        
+        const chainLabel = chainDeclaration 
+          ? `${chain}\n(${chainDeclaration.target})`
+          : chain;
+        
         tableNodes.push({
           id: `${table}-${chain}`,
           x: pos.x,
           y: pos.y,
-          label: chain,
+          label: chainLabel,
           type: 'chain',
-          color: '#2196F3'
+          color: chainDeclaration ? '#1976D2' : '#2196F3'
         });
       });
       
@@ -310,6 +320,9 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
     const radius = node.type === 'chain' ? 30 : node.type === 'endpoint' ? 25 : 20;
     const fontSize = node.type === 'chain' ? 12 : node.type === 'endpoint' ? 10 : 8;
     
+    // 检查是否是多行文本（包含链声明）
+    const isMultiLine = node.label.includes('\n');
+    
     return (
       <g key={node.id}>
         <circle
@@ -320,16 +333,43 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
           stroke="#333"
           strokeWidth="2"
         />
-        <text
-          x={node.x}
-          y={node.y + 4}
-          textAnchor="middle"
-          fontSize={fontSize}
-          fill="white"
-          fontWeight="bold"
-        >
-          {node.label}
-        </text>
+        {isMultiLine ? (
+          // 多行文本渲染
+          <g>
+            <text
+              x={node.x}
+              y={node.y - 2}
+              textAnchor="middle"
+              fontSize={fontSize}
+              fill="white"
+              fontWeight="bold"
+            >
+              {node.label.split('\n')[0]}
+            </text>
+            <text
+              x={node.x}
+              y={node.y + 10}
+              textAnchor="middle"
+              fontSize={fontSize - 2}
+              fill="white"
+              fontWeight="normal"
+            >
+              {node.label.split('\n')[1]}
+            </text>
+          </g>
+        ) : (
+          // 单行文本渲染
+          <text
+            x={node.x}
+            y={node.y + 4}
+            textAnchor="middle"
+            fontSize={fontSize}
+            fill="white"
+            fontWeight="bold"
+          >
+            {node.label}
+          </text>
+        )}
       </g>
     );
   };
@@ -462,30 +502,33 @@ const IptablesVisualization: React.FC<IptablesVisualizationProps> = ({ rules }) 
             
             {/* 添加图例 - 跟随缩放 */}
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-              <rect x="680" y="550" width="200" height="180" fill="white" stroke="#ccc" strokeWidth="1" rx="5" fillOpacity="0.95"/>
+              <rect x="680" y="550" width="200" height="200" fill="white" stroke="#ccc" strokeWidth="1" rx="5" fillOpacity="0.95"/>
               <text x="690" y="570" fontSize="12" fontWeight="bold" fill="#333">图例</text>
               
               <circle cx="695" cy="590" r="8" fill="#2196F3"/>
               <text x="710" y="595" fontSize="10" fill="#333">链 (Chain)</text>
               
-              <circle cx="695" cy="610" r="6" fill="#4CAF50"/>
-              <text x="710" y="615" fontSize="10" fill="#333">ACCEPT 规则</text>
+              <circle cx="695" cy="610" r="8" fill="#1976D2"/>
+              <text x="710" y="615" fontSize="10" fill="#333">链声明</text>
               
-              <circle cx="695" cy="630" r="6" fill="#F44336"/>
-              <text x="710" y="635" fontSize="10" fill="#333">DROP/REJECT 规则</text>
+              <circle cx="695" cy="630" r="6" fill="#4CAF50"/>
+              <text x="710" y="635" fontSize="10" fill="#333">ACCEPT 规则</text>
               
-              <circle cx="695" cy="650" r="6" fill="#FF5722"/>
-              <text x="710" y="655" fontSize="10" fill="#333">NAT 规则</text>
+              <circle cx="695" cy="650" r="6" fill="#F44336"/>
+              <text x="710" y="655" fontSize="10" fill="#333">DROP/REJECT 规则</text>
               
-              <circle cx="695" cy="670" r="8" fill="#FF9800"/>
-              <text x="710" y="675" fontSize="10" fill="#333">网络端点</text>
+              <circle cx="695" cy="670" r="6" fill="#FF5722"/>
+              <text x="710" y="675" fontSize="10" fill="#333">NAT 规则</text>
               
-              <circle cx="695" cy="690" r="8" fill="#9C27B0"/>
-              <text x="710" y="695" fontSize="10" fill="#333">表标题</text>
+              <circle cx="695" cy="690" r="8" fill="#FF9800"/>
+              <text x="710" y="695" fontSize="10" fill="#333">网络端点</text>
+              
+              <circle cx="695" cy="710" r="8" fill="#9C27B0"/>
+              <text x="710" y="715" fontSize="10" fill="#333">表标题</text>
               
               {/* 添加缩放级别显示 */}
-              <rect x="680" y="710" width="200" height="20" fill="#f5f5f5" stroke="#ddd" strokeWidth="1" rx="3"/>
-              <text x="690" y="725" fontSize="9" fill="#666">缩放: {Math.round(zoom * 100)}%</text>
+              <rect x="680" y="730" width="200" height="20" fill="#f5f5f5" stroke="#ddd" strokeWidth="1" rx="3"/>
+              <text x="690" y="745" fontSize="9" fill="#666">缩放: {Math.round(zoom * 100)}%</text>
             </g>
           </svg>
         </Box>

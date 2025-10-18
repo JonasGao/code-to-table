@@ -25,6 +25,7 @@ function IptablesParser() {
   });
   const [columns] = useState<GridColDef[]>([
     { field: 'table', headerName: '表', width: 100 },
+    { field: 'type', headerName: '类型', width: 100 },
     { field: 'chain', headerName: '链名', width: 120 },
     { field: 'target', headerName: '目标', width: 120 },
     { field: 'protocol', headerName: '协议', width: 100 },
@@ -49,6 +50,28 @@ function IptablesParser() {
       // 检查是否是表声明行
       if (trimmedLine.startsWith('*')) {
         currentTable = trimmedLine.substring(1); // 移除 * 符号
+        continue;
+      }
+      
+      // 检查是否是链声明行
+      if (trimmedLine.startsWith(':')) {
+        const chainMatch = trimmedLine.match(/^:(\S+)\s+(\S+)\s+\[(\d+):(\d+)\]$/);
+        if (chainMatch) {
+          const [, chain, policy, packets, bytes] = chainMatch;
+          allRules.push({
+            id: ruleIndex++,
+            table: currentTable,
+            chain,
+            target: policy,
+            protocol: '',
+            source: '',
+            destination: '',
+            port: '',
+            options: `[${packets}:${bytes}]`,
+            comment: '链声明',
+            type: 'chain_declaration'
+          });
+        }
         continue;
       }
       
@@ -115,7 +138,8 @@ function IptablesParser() {
           destination,
           port,
           options,
-          comment
+          comment,
+          type: 'rule'
         });
       }
     }
@@ -199,12 +223,12 @@ function IptablesParser() {
     <div>
       <TopNav />
       <div style={{ marginTop: 60 }}>
-        <Container maxWidth="xl">
+        <Container maxWidth={false}>
           <Typography variant="h4" gutterBottom>
             iptables 规则解析器
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, height: 'calc(100vh - 150px)' }}>
-            <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+            <Paper sx={{ flex: '0 0 40%', p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
               <Typography variant="h6" gutterBottom>
                 iptables-save 输出
               </Typography>
@@ -215,7 +239,7 @@ function IptablesParser() {
                 onChange={handleEditorChange}
               />
             </Paper>
-            <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: theme.palette.background.paper }}>
+            <Paper sx={{ flex: '0 0 60%', p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: theme.palette.background.paper }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">
                   解析结果
