@@ -47,6 +47,7 @@ const TopNav: React.FC = () => {
           <li><Link href="/docker-config" style={{ color: '#fff', textDecoration: 'none' }}>Docker配置生成</Link></li>
           <li><Link href="/netplan" style={{ color: '#fff', textDecoration: 'none' }}>Netplan配置生成</Link></li>
           <li><Link href="/iptables" style={{ color: '#fff', textDecoration: 'none' }}>iptables解析器</Link></li>
+          <li><Link href="/ip-addr" style={{ color: '#fff', textDecoration: 'none' }}>IP地址解析器</Link></li>
         </ul>
       </nav>
     );
@@ -80,6 +81,7 @@ const TopNav: React.FC = () => {
         <li><Link href="/docker-config" style={{ color: '#fff', textDecoration: 'none' }}>Docker配置生成</Link></li>
         <li><Link href="/netplan" style={{ color: '#fff', textDecoration: 'none' }}>Netplan配置生成</Link></li>
         <li><Link href="/iptables" style={{ color: '#fff', textDecoration: 'none' }}>iptables解析器</Link></li>
+        <li><Link href="/ip-addr" style={{ color: '#fff', textDecoration: 'none' }}>IP地址解析器</Link></li>
         <li>
           <IconButton 
             onClick={toggleTheme} 
